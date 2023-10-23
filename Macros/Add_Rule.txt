@@ -1,0 +1,9 @@
+Sub Add_Rule()
+    Dim wsRules As Worksheet: Set wsRules = ThisWorkbook.Worksheets("Rules")
+    Dim ruleTable As ListObject: Set ruleTable = wsRules.ListObjects("Rules")
+    Dim ruleRowCount As Integer: ruleRowCount = ruleTable.Range.Rows.Count
+    
+    'Add single row, increment the rule no.
+    ruleTable.ListRows.Add
+    ruleTable.Range.Cells(ruleRowCount + 1, 1).Value = ruleRowCount
+End Sub

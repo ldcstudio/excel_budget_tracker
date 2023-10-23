@@ -1,0 +1,17 @@
+Sub Clear_Table()
+    On Error GoTo ErrorHandler
+    Dim wsTemplate As Worksheet: Set wsTemplate = ThisWorkbook.Worksheets("Template")
+    Dim transTable As ListObject: Set transTable = wsTemplate.ListObjects("Transactions")
+    Dim transTableRowCount As Integer: transTableRowCount = wsTemplate.ListObjects("Transactions").Range.Rows.Count - 2
+    
+    'Clear data, delete all but two rows
+    transTable.DataBodyRange.SpecialCells(xlCellTypeConstants).ClearContents
+    If transTableRowCount > 2 Then transTable.Range.Rows("4:" & transTableRowCount + 1).Delete
+    
+ErrorHandler:
+    Select Case Err.Number
+    Case 1004 'No cells were found
+        MsgBox "Table has no data to clear"
+        If transTableRowCount > 2 Then transTable.Range.Rows("4:" & transTableRowCount + 1).Delete
+    End Select
+End Sub

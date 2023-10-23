@@ -1,0 +1,14 @@
+Private Sub Worksheet_Change(ByVal Target As Range)
+    Dim KeyCells As Range
+    Dim wsExpenses As Worksheet: Set wsExpenses = ThisWorkbook.Worksheets("Expenses")
+
+    'Assume header 'Type' is always worksheet column B
+    'Assume table data does not extend pass row 100
+    Set KeyCells = wsExpenses.Range("B9:B100")
+
+    If Not Application.Intersect(KeyCells, Range(Target.Address)) Is Nothing Then
+        'Update categories upon update
+        Get_Category_Data
+    End If
+    
+End Sub

@@ -1,0 +1,108 @@
+Dim swb, dwb As Workbook
+Dim sws, dws As Worksheet
+Dim transTable As ListObject
+Dim sFilePath, sColHeaders As Variant
+Dim sRowCount, dRowCount, sColCount As Integer
+Dim sDateData, sDescData, sAmountData As Range
+Dim dDateCol, dDescCol, dAmountCol As Integer
+
+Sub Get_Source_Data()
+    sColHeaders = Array("Date", "Description", "Amount")
+    
+    'Open bank statement
+    sFilePath = Application.GetOpenFilename
+    If sFilePath = False Then Exit Sub
+    
+    Set swb = Workbooks.Open(sFilePath)
+    Set sws = swb.Worksheets(1) 'Open first sheet
+    sRowCount = sws.Cells(sws.Rows.Count, 1).End(xlUp).Row - 1
+    sColCount = sws.Cells(1, sws.Columns.Count).End(xlToLeft).Column
+    
+End Sub
+
+Sub Get_Destination_Data()
+    Set dwb = ThisWorkbook
+    Set dws = dwb.Worksheets("Template")
+    Set transTable = dws.ListObjects("Transactions")
+    
+    dRowCount = transTable.Range.Rows.Count - 2
+    dDateCol = 1: dDescCol = 2: dAmountCol = 3
+    
+End Sub
+
+Sub Set_Destination_Data()
+    'Iterate through each source column
+    For i = 1 To sColCount
+        For Each Header In sColHeaders
+            'Check if column headers are present
+            If (sws.Cells(1, i) Like "*" & Header & "*") Then
+                Select Case Header
+                Case "Date"
+                    Set sDateData = sws.Cells(1, 1).Offset(1, i - 1).Resize(sRowCount, 1) 'Set date
+                    Exit For
+                
+                Case "Description"
+                    Set sDescData = sws.Cells(1, 1).Offset(1, i - 1).Resize(sRowCount, 1) 'Set Description
+                    Exit For
+                
+                Case "Amount"
+                    Set sAmountData = sws.Cells(1, 1).Offset(1, i - 1).Resize(sRowCount, 1) 'Set Amount
+                    Exit For
+                End Select
+            End If
+        Next Header
+    Next i
+End Sub
+
+Sub Add_Table_Rows(table As Variant, numRows As Variant)
+    Dim i As Integer
+    
+    For i = 1 To numRows
+        table.ListRows.Add
+    Next i
+End Sub
+
+Sub Add_Transaction_Table_Data()
+    'Confirm data is not null
+    If Not sDateData Is Nothing Then
+        transTable.DataBodyRange.Cells(dRowCount, dDateCol).Resize(sRowCount, 1).Value = sDateData.Value
+    End If
+
+    If Not sDescData Is Nothing Then
+        transTable.DataBodyRange.Cells(dRowCount, dDescCol).Resize(sRowCount, 1).Value = sDescData.Value
+    End If
+
+    If Not sAmountData Is Nothing Then
+        transTable.DataBodyRange.Cells(dRowCount, dAmountCol).Resize(sRowCount, 1).Value = sAmountData.Value
+    End If
+End Sub
+
+Sub Import_Transaction_Data()
+    On Error GoTo ErrorHandler
+    Dim i As Integer
+    
+    Get_Source_Data
+    Get_Destination_Data
+    Set_Destination_Data
+
+    'Offset applied for header row (only required if data is present)
+    If dRowCount > 2 Then
+        'Data present
+        dRowCount = dRowCount + 1
+        Add_Table_Rows transTable, sRowCount
+    Else
+        'Data not present
+        dRowCount = 1
+        Add_Table_Rows transTable, sRowCount - 2
+    End If
+
+    Add_Transaction_Table_Data
+
+    swb.Close 'Close source Workbook
+    
+ErrorHandler:
+    Select Case Err.Number
+    Case 9 'Subscript out of range
+        MsgBox "Select a file to import and try again"
+    End Select
+End Sub

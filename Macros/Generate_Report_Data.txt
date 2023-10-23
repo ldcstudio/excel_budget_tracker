@@ -1,0 +1,52 @@
+Dim wsTemplate, wsBudget As Worksheet
+Dim transTable, budgetTable As ListObject
+Dim transTableRowCount, budgetTableRowCount As Integer
+Dim budgetMonth As String
+
+Sub Get_Data()
+    'Get template data
+    Set wsTemplate = ThisWorkbook.Worksheets("Template")
+    Set transTable = wsTemplate.ListObjects("Transactions")
+    transTableRowCount = transTable.Range.Rows.Count - 2
+    budgetMonth = wsTemplate.Range("D3").Value
+    
+    'Get budget data
+    Set wsBudget = ThisWorkbook.Sheets(budgetMonth)
+    Set budgetTable = wsBudget.ListObjects(budgetMonth & "Report")
+    budgetTableRowCount = budgetTable.Range.Rows.Count - 2
+    
+    'Confirm data exists
+    If transTableRowCount < 3 Then MsgBox ("Enter data and try again"): Exit Sub
+End Sub
+
+Sub Generate_Report_Data()
+    Dim i As Integer
+    Dim qConfirmDeletion As Variant
+    On Error GoTo ErrorHandler
+    
+    Get_Data
+    
+    'Delete data from budget table if already exists
+    If budgetTableRowCount > 2 Then
+        qConfirmDeletion = MsgBox("Data already exists, delete existing data?", vbYesNo)
+        If qConfirmDeletion = vbYes Then
+            budgetTable.DataBodyRange.ClearContents
+            budgetTable.Range.Rows("4:" & budgetTableRowCount + 1).Delete
+            Add_Table_Rows budgetTable, transTableRowCount - 2
+        Else
+            Exit Sub
+        End If
+    Else
+        Add_Table_Rows budgetTable, transTableRowCount - 2
+    End If
+    
+    budgetTable.DataBodyRange.Value = transTable.DataBodyRange.Value
+    wsBudget.Visible = True 'Show sheet if hidden
+    wsBudget.Select
+    
+ErrorHandler:
+    Select Case Err.Number
+    Case 9 'Subscript out of range
+        MsgBox "Please select a Month and try again (cell D3)"
+    End Select
+End Sub

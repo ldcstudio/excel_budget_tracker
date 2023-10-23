@@ -1,0 +1,72 @@
+Dim wsTransaction, wsRules As Worksheet
+Dim transTable, rulesTable As ListObject
+Dim transTableRowCount, rulesRowCount, rulesColCount As Integer
+Dim descColData, typeColData, notesColData As Range
+Dim descCol, typeCol, notesCol As Integer
+Dim expenseRules As Variant
+
+Sub Get_Expense_Data()
+    Dim i As Integer
+    Set wsTransaction = ThisWorkbook.Worksheets("Template")
+    Set wsRules = ThisWorkbook.Worksheets("Rules")
+    Set transTable = wsTransaction.ListObjects("Transactions")
+    Set rulesTable = wsRules.ListObjects("Rules")
+
+    transTableRowCount = transTable.Range.Rows.Count - 2
+    rulesRowCount = rulesTable.Range.Rows.Count - 1 'Totals row not present
+    rulesColCount = rulesTable.Range.Columns.Count
+    
+    descCol = 2: typeCol = 4: notesCol = 5
+
+    ReDim expenseRules(rulesRowCount) As Variant
+
+    'Assume column headers will not update
+    Set descColData = transTable.DataBodyRange.Cells(1, descCol).Resize(transTableRowCount, 1)
+    Set typeColData = transTable.DataBodyRange.Cells(1, typeCol).Resize(transTableRowCount, 1)
+    Set notesColData = transTable.DataBodyRange.Cells(1, notesCol).Resize(transTableRowCount, 1)
+
+    'Iterate expense rules
+    For i = 0 To rulesRowCount - 1
+        expenseRules(i) = rulesTable.DataBodyRange.Cells(1, 1).Offset(i, 0).Resize(1, rulesColCount).Value
+    Next i
+    
+End Sub
+
+Sub Categorize_Transaction_Data()
+    Dim i, j As Integer
+    Dim curCell As Range
+    Dim expenseFound As Boolean: expenseFound = False
+
+    'Populate expense data params
+    Get_Expense_Data
+
+    'Iterate the description of each expense
+    For i = 1 To transTableRowCount
+        Set curCell = descColData.Cells(i)
+        'Check expense rules
+        For j = 1 To rulesRowCount
+            expenseFound = Categorize_Expense(i, curCell, expenseRules(j - 1))
+            If expenseFound = True Then Exit For
+        Next j
+    Next i
+
+End Sub
+
+Function Categorize_Expense(i As Variant, curCell As Variant, expense As Variant) As Boolean
+    Dim descValue, descValues As Variant
+
+    'Handle multiple description values (separated by ';')
+    descValues = Split(expense(1, 2), ";")
+
+    For Each descValue In descValues
+        If (WorksheetFunction.CountIf(curCell, "*" & descValue & "*") > 0) Then
+            typeColData.Cells(i) = expense(1, 3)
+            notesColData.Cells(i) = expense(1, 4)
+            Categorize_Expense = True
+            Exit Function
+        End If
+    Next descValue
+
+    Categorize_Expense = False
+
+End Function

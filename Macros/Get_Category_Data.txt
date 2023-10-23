@@ -1,0 +1,41 @@
+Sub Get_Category_Data()
+    Dim i As Integer
+    Dim categoryArray As Variant
+    Dim homeRowCount, transportRowCount, subscriptionRowCount, miscRowCount, _
+        totalRowCount As Integer
+    Dim wsExpenses As Worksheet: Set wsExpenses = ThisWorkbook.Worksheets("Expenses")
+    
+    homeRowCount = wsExpenses.ListObjects("HomeExpenses").Range.Rows.Count - 2
+    transportRowCount = wsExpenses.ListObjects("TransportExpenses").Range.Rows.Count - 2
+    subscriptionRowCount = wsExpenses.ListObjects("SubscriptionExpenses").Range.Rows.Count - 2
+    miscRowCount = wsExpenses.ListObjects("miscExpenses").Range.Rows.Count - 2
+    totalRowCount = homeRowCount + transportRowCount + subscriptionRowCount + miscRowCount
+    
+    ReDim categoryArray(totalRowCount)
+    
+    For i = 0 To homeRowCount - 1
+        'Assume header 'Type' is always column 1
+        categoryArray(i) = wsExpenses.ListObjects("HomeExpenses").DataBodyRange.Cells(i + 1, 1)
+    Next i
+    
+    For i = 0 To transportRowCount - 1
+        'Assume header 'Type' is always column 1
+        categoryArray(i + homeRowCount) = wsExpenses.ListObjects("TransportExpenses").DataBodyRange.Cells(i + 1, 1)
+    Next i
+    
+    For i = 0 To subscriptionRowCount - 1
+        'Assume header 'Type' is always column 1
+        categoryArray(i + homeRowCount + transportRowCount) = _
+        wsExpenses.ListObjects("SubscriptionExpenses").DataBodyRange.Cells(i + 1, 1)
+    Next i
+    
+    For i = 0 To miscRowCount - 1
+        'Assume header 'Type' is always column 1
+        categoryArray(i + homeRowCount + transportRowCount + subscriptionRowCount) = _
+        wsExpenses.ListObjects("miscExpenses").DataBodyRange.Cells(i + 1, 1)
+    Next i
+    
+    wsExpenses.Range("G3").Resize(totalRowCount, 1).Value = WorksheetFunction.Transpose(categoryArray)
+    
+End Sub
+
